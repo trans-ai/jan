@@ -338,9 +338,9 @@ export const models = async (request: any, reply: any) => {
 export const chatCompletions = async (request: any, reply: any) => {
 
   const requestedBody = request.body
-  console.log(`\n\n`)
-  console.log(`origin: ${JSON.stringify(requestedBody)}`)
-  console.log(`\n\n`)
+  //console.log(`\n\n`)
+  //console.log(`origin: ${JSON.stringify(requestedBody)}`)
+  //console.log(`\n\n`)
 
   const combinedStream = CombinedStream.create()
   const { prompt, stream: stream0 } = await chatCompletions0(requestedBody)

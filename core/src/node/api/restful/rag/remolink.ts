@@ -26,8 +26,11 @@ export const chatCompletions0 = async (body: any) => {
     }
   }
 
-  const headers: Record<string, any> = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache',
+    'Connection': 'close',
+    'Access-Control-Allow-Origin': '*',
   }
 
   const apiUrl = `${agentUrl}`
@@ -36,9 +39,8 @@ export const chatCompletions0 = async (body: any) => {
   })
   
   const options = { method: 'POST', headers: headers, body: param }
-  const data = await fetch(`${apiUrl}`, options).then((res) => { return res.json() }).then((value) => { return value })
-  //console.log(`result from rag server: ${JSON.stringify(data)}`)
-
+  const data = await fetch(`${apiUrl}`, options).then((res) => { return res.json() }).catch((reason) => { })
+  
   const msgId = ulid()
   const createdAt = Date.now()
 
@@ -54,12 +56,12 @@ export const chatCompletions0 = async (body: any) => {
             }
           ]
         },
-        created: createdAt,
-        id: msgId,
-        model: "_",
-        object: "chat.completion.message"
-      }
-    ]
+      },
+    ],
+    created: createdAt,
+    id: msgId,
+    model: "_",
+    object: "chat.completion.message"
   }
 
   return {
