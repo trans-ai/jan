@@ -14,6 +14,10 @@ import { ContentType, InferenceEngine, MessageStatus, ThreadMessage } from '../.
 import { getJanDataFolderPath } from '../../../helper'
 import { CORTEX_API_URL } from './consts'
 
+//MARK: sooskim - extend to external agent (added)
+import { chatCompletions0 } from '../rag/remolink'
+var CombinedStream = require('combined-stream')
+
 // TODO: Refactor these
 export const getBuilder = async (configuration: RouteConfiguration) => {
   const directoryPath = join(getJanDataFolderPath(), configuration.dirName)
@@ -330,12 +334,56 @@ export const models = async (request: any, reply: any) => {
   }
 }
 
+//MARK: sooskim - extend to external agent (changed)
+export const chatCompletions = async (request: any, reply: any) => {
+
+  const requestedBody = request.body
+  console.log(`\n\n`)
+  console.log(`origin: ${JSON.stringify(requestedBody)}`)
+  console.log(`\n\n`)
+
+  const combinedStream = CombinedStream.create()
+  const { prompt, stream: stream0 } = await chatCompletions0(requestedBody)
+  
+  const chain0 = {
+    body: {
+      ...request.body,
+      messages: [
+        {
+          ...prompt
+        },
+        ...request.body.messages
+      ]
+    }
+  }
+
+  //console.log(`chain: ${JSON.stringify(chain0)}`)
+  //console.log(`\n\n`)
+
+  const stream1 = await chatCompletions1(chain0, reply)
+  const stream2 = await chatCompletions1(request, reply)
+
+  combinedStream.append(stream0)
+  combinedStream.append(stream1)
+  combinedStream.append(stream2)
+
+  reply.raw.writeHead(200, {
+    'Content-Type': request.body.stream === true ? 'text/event-stream' : 'application/json',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+  })
+
+  combinedStream.pipe(reply.raw)
+}
+
+//MARK: sooskim - extend to external agent (origin)
 /**
  * Proxy chat completions
  * @param request
  * @param reply
  */
-export const chatCompletions = async (request: any, reply: any) => {
+export const chatCompletions1 = async (request: any, reply: any) => {
   const headers: Record<string, any> = {
     'Content-Type': 'application/json',
   }
@@ -346,23 +394,29 @@ export const chatCompletions = async (request: any, reply: any) => {
   }
 
   const fetch = require('node-fetch')
-  const response = await fetch(`${CORTEX_API_URL}/chat/completions`, {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify(request.body),
-  })
-  if (response.status !== 200) {
-    // Forward the error response to client via reply
-    const responseBody = await response.text()
-    const responseHeaders = Object.fromEntries(response.headers)
-    reply.code(response.status).headers(responseHeaders).send(responseBody)
-  } else {
-    reply.raw.writeHead(200, {
-      'Content-Type': request.body.stream === true ? 'text/event-stream' : 'application/json',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
-    })
-    response.body.pipe(reply.raw)
-  }
+  //MARK: sooskim - modify
+  //---[
+  //const response = await fetch(`${CORTEX_API_URL}/chat/completions`, {
+  //  method: 'POST',
+  //  headers: headers,
+  //  body: JSON.stringify(request.body),
+  //})
+  //if (response.status !== 200) {
+  //  // Forward the error response to client via reply
+  //  const responseBody = await response.text()
+  //  const responseHeaders = Object.fromEntries(response.headers)
+  //  reply.code(response.status).headers(responseHeaders).send(responseBody)
+  //} else {
+  //  reply.raw.writeHead(200, {
+  //    'Content-Type': request.body.stream === true ? 'text/event-stream' : 'application/json',
+  //    'Cache-Control': 'no-cache',
+  //    'Connection': 'keep-alive',
+  //    'Access-Control-Allow-Origin': '*',
+  //  })
+  //  response.body.pipe(reply.raw)
+  //}
+  //---]
+
+  //MARK: sooskim - return stream only.
+  return await fetch(`${CORTEX_API_URL}/chat/completions`, { method: 'POST', headers: headers, body: JSON.stringify(request.body), }).then((response: any) => response.body)
 }
