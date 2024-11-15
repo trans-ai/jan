@@ -40,7 +40,9 @@ export const chatCompletions0 = async (body: any) => {
   
   const options = { method: 'POST', headers: headers, body: param }
   const data = await fetch(`${apiUrl}`, options).then((res) => { return res.json() }).catch((reason) => { })
-  
+
+  console.log(`RAG result from agent: ${JSON.stringify(data?.text)}`)
+
   const msgId = ulid()
   const createdAt = Date.now()
 
@@ -51,8 +53,8 @@ export const chatCompletions0 = async (body: any) => {
           content: [
             {
               type: 'text',
-              keyword: `${data?.content?.keyword}`,
-              content: `${data?.content?.text}`
+              keyword: `${data?.keyword}`,
+              content: `${data?.text}`
             }
           ]
         },
@@ -65,25 +67,46 @@ export const chatCompletions0 = async (body: any) => {
   }
 
   return {
+    data: data,
     stream: Readable.from([`data: ${JSON.stringify(choices)}`, '\n', '\n'], { encoding: "utf-8", read: (size) => { } }),
     prompt: {
-      "content": `You are very helpfull assistant.
-${keyword}에 대해, 다음 문장과 링크 및 이미지를 참고하여 사용자의 질문에 대답해줘. 참고 이미지와 링크도 제시해줘.
+      "content": `You are very helpfull assistant. ${keyword}에 대해, 다음 문장을 참고하여 사용자의 질문에 대답해줘.
 
->> 문장:
-${data?.content?.text}
-
->> 링크:
-${JSON.stringify(data?.content?.links)}
-
->> 이미지:
-${JSON.stringify(data?.content?.images)}
-
->> IMPORTANT!! Output format should be in a Bullet point list! and add line space at end of paragraph.
->> IMPORTANT!! image tag format should be in Markdown format.\n\n
-      `,
+${data?.text}
+`,
       "role": "system"
     }
+  }
+}
+
+export const chatCompletionsMeta = async (meta: any) => {
+  const msgId = ulid()
+  const createdAt = Date.now()
+
+  const choices = {
+    choices: [
+      {
+        message: {
+          content: [
+            {
+              type: 'image',
+              content: meta?.images
+            }
+          ]
+        },
+      },
+    ],
+    created: createdAt,
+    id: msgId,
+    model: "_",
+    object: "chat.completion.message"
+  }
+
+  const eventString = JSON.stringify(choices)
+  //console.log(`WILL BE STREAM: ${eventString}`)
+
+  return {
+    stream: Readable.from([`data: ${eventString}`, '\n', '\n'], { encoding: "utf-8", read: (size) => { } }),
   }
 }
 

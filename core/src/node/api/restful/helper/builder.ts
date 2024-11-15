@@ -15,7 +15,7 @@ import { getJanDataFolderPath } from '../../../helper'
 import { CORTEX_API_URL } from './consts'
 
 //MARK: sooskim - extend to external agent (added)
-import { chatCompletions0 } from '../rag/remolink'
+import { chatCompletions0, chatCompletionsMeta } from '../rag/remolink'
 var CombinedStream = require('combined-stream')
 
 // TODO: Refactor these
@@ -338,12 +338,12 @@ export const models = async (request: any, reply: any) => {
 export const chatCompletions = async (request: any, reply: any) => {
 
   const requestedBody = request.body
-  //console.log(`\n\n`)
-  //console.log(`origin: ${JSON.stringify(requestedBody)}`)
-  //console.log(`\n\n`)
+  console.log(`origin: ${JSON.stringify(requestedBody)}`)
 
   const combinedStream = CombinedStream.create()
-  const { prompt, stream: stream0 } = await chatCompletions0(requestedBody)
+
+  const { data, prompt, stream: stream0 } = await chatCompletions0(requestedBody)
+  const { stream: meta0 } = await chatCompletionsMeta(data)
   
   const chain0 = {
     body: {
@@ -357,15 +357,15 @@ export const chatCompletions = async (request: any, reply: any) => {
     }
   }
 
-  //console.log(`chain: ${JSON.stringify(chain0)}`)
-  //console.log(`\n\n`)
+  //console.log(`chain0 prompt - ${JSON.stringify(data.images)}`)
 
-  const stream1 = await chatCompletions1(chain0, reply)
-  const stream2 = await chatCompletions1(request, reply)
+  //const stream1 = await chatCompletions1(request, reply)
+  const stream2 = await chatCompletions1(chain0, reply)
 
-  combinedStream.append(stream0)
-  combinedStream.append(stream1)
+  //combinedStream.append(stream1)
   combinedStream.append(stream2)
+  //combinedStream.append(stream0)
+  combinedStream.append(meta0)
 
   reply.raw.writeHead(200, {
     'Content-Type': request.body.stream === true ? 'text/event-stream' : 'application/json',

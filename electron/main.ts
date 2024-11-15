@@ -87,12 +87,12 @@ app
   .then(() => process.env.CI !== 'e2e' && createQuickAskWindow())
   .then(createMainWindow)
   .then(registerGlobalShortcuts)
-  .then(() => {
-    if (!app.isPackaged) {
-      setupReactDevTool()
-      windowManager.mainWindow?.webContents.openDevTools()
-    }
-  })
+  //.then(() => {
+  //  if (!app.isPackaged) {
+  //    setupReactDevTool()
+  //    windowManager.mainWindow?.webContents.openDevTools()
+  //  }
+  //})
   .then(() => process.env.CI !== 'e2e' && trayManager.createSystemTray())
   .then(logSystemInfo)
   .then(() => {
